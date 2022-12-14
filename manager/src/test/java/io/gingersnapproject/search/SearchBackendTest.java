@@ -16,7 +16,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 
 @QuarkusTest
-@QuarkusTestResource(SearchTestResource.class)
+@QuarkusTestResource(value = SearchTestResource.class, restrictToAnnotatedClass = true)
 public class SearchBackendTest {
 
    private static final Logger LOG = Logger.getLogger(SearchBackendTest.class);
