@@ -42,11 +42,22 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_TOKEN }}
 
-
-      - name: Build and push
+      - name: Build and push MYSQL
         uses: docker/build-push-action@v3
         with:
           context: .
           file: manager/src/main/docker/Dockerfile.jvm
           push: true
-          tags: quay.io/gingersnap/cache-manager:${{ steps.vars.outputs.LATEST_TAG }}
+          tags: quay.io/gingersnap/cache-manager-mysql:${{ steps.vars.outputs.LATEST_TAG }}
+          build-args: |
+            DB_VENDOR=mysql
+
+      - name: Build and push Postgres
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: manager/src/main/docker/Dockerfile.jvm
+          push: true
+          tags: quay.io/gingersnap/cache-manager-postgres:${{ steps.vars.outputs.LATEST_TAG }}
+          build-args: |
+            DB_VENDOR=postgres

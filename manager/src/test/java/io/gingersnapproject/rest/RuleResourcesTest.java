@@ -2,6 +2,7 @@ package io.gingersnapproject.rest;
 
 import static io.restassured.RestAssured.given;
 
+import io.gingersnapproject.database.DatabaseResourcesLifecyleManager;
 import io.gingersnapproject.mysql.MySQLResources;
 import io.gingersnapproject.profile.GingersnapIntegrationTest;
 
@@ -12,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @GingersnapIntegrationTest
-@QuarkusTestResource(MySQLResources.class)
+@QuarkusTestResource(DatabaseResourcesLifecyleManager.class)
 public class RuleResourcesTest {
 
    @Test

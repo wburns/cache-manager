@@ -3,6 +3,7 @@ package io.gingersnapproject.rules;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import io.gingersnapproject.database.DatabaseResourcesLifecyleManager;
 import org.infinispan.client.hotrod.DataFormat;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
@@ -18,7 +19,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
-@QuarkusTestResource(value = MySQLResources.class)
+@QuarkusTestResource(value = DatabaseResourcesLifecyleManager.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class JoinTest {
    private static final String RULE_NAME = "flight";

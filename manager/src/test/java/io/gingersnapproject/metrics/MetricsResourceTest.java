@@ -1,31 +1,28 @@
 package io.gingersnapproject.metrics;
 
-import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.COMPONENT_KEY;
-import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.COMPONENT_NAME;
-import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.RULE_KEY;
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.containsString;
+import io.gingersnapproject.database.DatabaseResourcesLifecyleManager;
+import io.gingersnapproject.metrics.micrometer.PerRuleGaugeMetric;
+import io.gingersnapproject.metrics.micrometer.PerRuleTimerMetric;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.config.NamingConvention;
+import io.micrometer.prometheus.PrometheusNamingConvention;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import org.apache.http.HttpStatus;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.HttpStatus;
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Test;
-
-import io.gingersnapproject.metrics.micrometer.PerRuleGaugeMetric;
-import io.gingersnapproject.metrics.micrometer.PerRuleTimerMetric;
-import io.gingersnapproject.mysql.MySQLResources;
-import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.config.NamingConvention;
-import io.micrometer.prometheus.PrometheusNamingConvention;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
+import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.*;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
-@QuarkusTestResource(MySQLResources.class)
+@QuarkusTestResource(DatabaseResourcesLifecyleManager.class)
 public class MetricsResourceTest {
 
    private static final String GET_PATH = "/rules/{rule}/{key}";
