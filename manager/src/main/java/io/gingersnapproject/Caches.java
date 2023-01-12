@@ -13,19 +13,25 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.infinispan.commons.dataconversion.internal.Json;
+import org.infinispan.util.KeyValuePair;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+
 import io.gingersnapproject.configuration.Configuration;
+import io.gingersnapproject.configuration.Rule;
 import io.gingersnapproject.database.DatabaseHandler;
+import io.gingersnapproject.database.model.ForeignKey;
+import io.gingersnapproject.database.model.Table;
 import io.gingersnapproject.metrics.CacheAccessRecord;
 import io.gingersnapproject.metrics.CacheManagerMetrics;
 import io.gingersnapproject.mutiny.UniItem;
 import io.gingersnapproject.search.IndexingHandler;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniJoin;
-import org.infinispan.util.KeyValuePair;
 
 @Singleton
 public class Caches {
@@ -58,6 +64,30 @@ public class Caches {
       if (cache != null) {
          cache.asMap().remove(key, value);
       }
+   }
+
+   public Uni<String> denormalizedPut(String name, String key, String value) {
+      Rule rule = configuration.rules().get(name);
+      if (rule.expandEntity()) {
+         Table table = databaseHandler.table(rule.connector().table());
+         if (!table.foreignKeys().isEmpty()) {
+            // We have foreign keys to resolve
+            Json json = Json.read(value);
+            UniJoin.Builder<Object> builder = Uni.join().builder();
+            for (ForeignKey fk : table.foreignKeys()) {
+               // TODO: handle composite fks
+               Json fkJson = json.atDel(fk.columns().get(0));
+               if (fkJson != null) {
+                  String fkId = fkJson.asString();
+                  String fkRule = databaseHandler.tableToRuleName(fk.refTable());
+                  builder.add(getOrCreateMap(fkRule).get(fkId).map(Json::read).map(j -> json.set(fkRule, j)));
+               }
+            }
+            return builder.joinAll().andFailFast().chain(() -> put(name, key, json.toString()));
+         }
+      }
+      // Nothing to denormalize
+      return put(name, key, value);
    }
 
    public Uni<String> put(String name, String key, String value) {
@@ -104,7 +134,7 @@ public class Caches {
             .stream();
    }
 
-   public Uni<Map<String, String>> getAll(String name, Collection<String> keys)  {
+   public Uni<Map<String, String>> getAll(String name, Collection<String> keys) {
       Map<String, Uni<String>> res = getOrCreateMap(name).getAll(keys);
 
       if (res.isEmpty()) return EMPTY_MAP_UNI;
@@ -158,7 +188,8 @@ public class Caches {
                return size;
             })
             .build(new CacheLoader<>() {
-               @Override public Uni<String> load(String key) {
+               @Override
+               public Uni<String> load(String key) {
                   Uni<String> dbUni = databaseHandler.select(rule, key)
                         // Make sure to use memoize, so that if multiple people subscribe to this it won't cause
                         // multiple DB lookups

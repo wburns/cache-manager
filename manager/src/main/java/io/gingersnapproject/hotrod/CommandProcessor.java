@@ -73,8 +73,7 @@ public class CommandProcessor {
             writeSuccess(header);
             return;
          }
-
-         Uni<String> putUni = maps.put(header.getCacheName(), toString(key), toString(value));
+         Uni<String> putUni = maps.denormalizedPut(header.getCacheName(), toString(key), toString(value));
          putUni.subscribe().with(___ -> writeSuccess(header), t -> writeException(header, t));
       } catch (Throwable t) {
          writeException(header, t);

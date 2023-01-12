@@ -19,6 +19,9 @@ public interface Rule {
       @WithDefault("false")
       boolean queryEnabled();
 
+      @WithDefault("true")
+      boolean expandEntity();
+
       enum KeyType {
             PLAIN {
                   @Override

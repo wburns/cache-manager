@@ -1,5 +1,20 @@
 package io.gingersnapproject.metrics;
 
+import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.COMPONENT_KEY;
+import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.COMPONENT_NAME;
+import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.RULE_KEY;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
+
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.http.HttpStatus;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.Test;
+
 import io.gingersnapproject.metrics.micrometer.PerRuleGaugeMetric;
 import io.gingersnapproject.metrics.micrometer.PerRuleTimerMetric;
 import io.gingersnapproject.mysql.MySQLResources;
@@ -8,21 +23,6 @@ import io.micrometer.core.instrument.config.NamingConvention;
 import io.micrometer.prometheus.PrometheusNamingConvention;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import org.apache.http.HttpStatus;
-import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-
-import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.COMPONENT_KEY;
-import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.COMPONENT_NAME;
-import static io.gingersnapproject.metrics.micrometer.CacheManagerMicrometerMetrics.RULE_KEY;
-import static io.gingersnapproject.mysql.MySQLResources.RULE_NAME;
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
 @QuarkusTestResource(MySQLResources.class)
@@ -40,27 +40,27 @@ public class MetricsResourceTest {
       Arrays.stream(PerRuleGaugeMetric.values()).forEach(metric -> expectedGauge.put(metric, "0.0"));
 
       // cache remote hit!
-      given().when().get(GET_PATH, RULE_NAME, "1").then().body(containsString("Jon Doe"));
+      given().when().get(GET_PATH, "airline", "1").then().body(containsString("British Airways"));
       expectedCount.put(PerRuleTimerMetric.CACHE_REMOTE_HIT, "1.0");
       expectedGauge.put(PerRuleGaugeMetric.CACHE_SIZE, "1.0");
       assertTimerMetricsValue(expectedCount);
       assertGaugeMetricsValue(expectedGauge);
 
       // cache local hit
-      given().when().get(GET_PATH, RULE_NAME, "1").then().body(containsString("Jon Doe"));
+      given().when().get(GET_PATH, "airline", "1").then().body(containsString("British Airways"));
       expectedCount.put(PerRuleTimerMetric.CACHE_LOCAL_HIT, "1.0");
       assertTimerMetricsValue(expectedCount);
       assertGaugeMetricsValue(expectedGauge);
 
       // cache remote miss
-      given().when().get(GET_PATH, RULE_NAME, "100000").then().statusCode(HttpStatus.SC_NO_CONTENT);
+      given().when().get(GET_PATH, "airline", "100000").then().statusCode(HttpStatus.SC_NO_CONTENT);
       expectedCount.put(PerRuleTimerMetric.CACHE_REMOTE_MISS, "1.0");
       expectedGauge.put(PerRuleGaugeMetric.CACHE_SIZE, "2.0");
       assertTimerMetricsValue(expectedCount);
       assertGaugeMetricsValue(expectedGauge);
 
       // cache local miss
-      given().when().get(GET_PATH, RULE_NAME, "100000").then().statusCode(HttpStatus.SC_NO_CONTENT);
+      given().when().get(GET_PATH, "airline", "100000").then().statusCode(HttpStatus.SC_NO_CONTENT);
       expectedCount.put(PerRuleTimerMetric.CACHE_LOCAL_MISS, "1.0");
       assertTimerMetricsValue(expectedCount);
       assertGaugeMetricsValue(expectedGauge);
@@ -116,7 +116,7 @@ public class MetricsResourceTest {
             NAMING_CONVENTION.tagKey(COMPONENT_KEY),
             NAMING_CONVENTION.tagValue(COMPONENT_NAME),
             NAMING_CONVENTION.tagKey(RULE_KEY),
-            NAMING_CONVENTION.tagValue(RULE_NAME)
+            NAMING_CONVENTION.tagValue("airline")
       );
       // value
       return name + " " + value;

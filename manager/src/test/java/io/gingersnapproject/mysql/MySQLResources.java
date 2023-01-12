@@ -1,16 +1,20 @@
 package io.gingersnapproject.mysql;
 
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.MountableFile;
 
-import java.util.HashMap;
-import java.util.Map;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class MySQLResources implements QuarkusTestResourceLifecycleManager {
-
-   public static final String RULE_NAME = "us-east";
    private static final String IMAGE = "mysql:8.0.31";
+
+   private static final String DATABASE = "gingersnap";
 
    private MySQLContainer<?> db;
 
@@ -19,31 +23,25 @@ public class MySQLResources implements QuarkusTestResourceLifecycleManager {
       db = new MySQLContainer<>(IMAGE)
             .withUsername("gingersnap_user")
             .withPassword("password")
+            .withDatabaseName(DATABASE)
             .withExposedPorts(MySQLContainer.MYSQL_PORT)
-            .withCopyFileToContainer(MountableFile.forClasspathResource("setup.sql"), "/docker-entrypoint-initdb.d/setup.sql");
+            .withCopyFileToContainer(MountableFile.forClasspathResource("mysql-setup.sql"), "/docker-entrypoint-initdb.d/mysql-setup.sql")
+      ;
       db.start();
 
-      Map<String, String> properties = new HashMap<>( Map.of(
+      Map<String, String> properties = new HashMap<>(Map.of(
             "quarkus.datasource.db-kind", "MYSQL",
             "quarkus.datasource.username", db.getUsername(),
             "quarkus.datasource.password", db.getPassword(),
-            "quarkus.datasource.reactive.url", String.format("mysql://%s:%d/debezium", db.getHost(), db.getMappedPort(MySQLContainer.MYSQL_PORT)),
-            String.format("gingersnap.rule.%s.key-type", RULE_NAME), "PLAIN",
-            String.format("gingersnap.rule.%s.plain-separator", RULE_NAME), ":",
-            String.format("gingersnap.rule.%s.select-statement", RULE_NAME), "select fullname, email from customer where id = ?",
-            String.format("gingersnap.rule.%s.connector.schema", RULE_NAME), "debezium",
-            String.format("gingersnap.rule.%s.connector.table", RULE_NAME), "customer"));
+            "quarkus.datasource.reactive.url", String.format("mysql://%s:%d/%s", db.getHost(), db.getMappedPort(MySQLContainer.MYSQL_PORT), db.getDatabaseName())));
 
-      for (int i = 1; i < 5; ++i) {
-          properties.putAll(Map.of(
-            "gingersnap.rule.developers-" + i + ".key-type", "PLAIN",
-            "gingersnap.rule.developers-" + i + ".plain-separator", ":",
-            "gingersnap.rule.developers-" + i + ".select-statement", "select fullname, email from customer where id = ?",
-            "gingersnap.rule.developers-" + i + ".query-enabled", "true",
-            "gingersnap.rule.developers-" + i + ".connector.schema", "debezium",
-            "gingersnap.rule.developers-" + i + ".connector.table", "developers-" + i));
+      try (InputStream is = this.getClass().getClassLoader().getResourceAsStream("mysql-test.properties")) {
+         Properties p = new Properties();
+         p.load(is);
+         p.forEach((k, v) -> properties.put((String) k, (String) v));
+      } catch (IOException e) {
+         throw new RuntimeException(e);
       }
-
       return properties;
    }
 
