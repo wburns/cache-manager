@@ -1,11 +1,9 @@
 package io.gingersnapproject.mysql;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.MountableFile;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,9 +11,6 @@ public class MySQLResources implements QuarkusTestResourceLifecycleManager {
 
    public static final String RULE_NAME = "us-east";
    private static final String IMAGE = "mysql:8.0.31";
-
-   private static final String HOST_TMP = Path.of(System.getProperty("java.io.tmpdir"), "mysql_cache_manager").toString();
-   private static final String CONTAINER_DATA_DIR = "/var/lib/mysql";
 
    private MySQLContainer<?> db;
 
@@ -25,7 +20,6 @@ public class MySQLResources implements QuarkusTestResourceLifecycleManager {
             .withUsername("gingersnap_user")
             .withPassword("password")
             .withExposedPorts(MySQLContainer.MYSQL_PORT)
-            .withFileSystemBind(HOST_TMP, CONTAINER_DATA_DIR, BindMode.READ_WRITE)
             .withCopyFileToContainer(MountableFile.forClasspathResource("setup.sql"), "/docker-entrypoint-initdb.d/setup.sql");
       db.start();
 
