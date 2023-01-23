@@ -21,3 +21,10 @@ jobs:
           name: Postgres Tests
           path: '**/*.xml'
           reporter: java-junit
+
+      - uses: dorny/test-reporter@v1
+        with:
+          artifact: mssql-test-results
+          name: MSSQL Tests
+          path: '**/*.xml'
+          reporter: java-junit

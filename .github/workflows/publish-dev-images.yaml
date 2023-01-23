@@ -37,3 +37,12 @@ jobs:
           tags: quay.io/gingersnap/cache-manager-postgres:latest
           build-args: |
             DB_VENDOR=postgres
+
+      - name: Build and push MSSQL
+        uses: docker/build-push-action@v3
+        with:
+          file: manager/src/main/docker/Dockerfile.native-micro-builder
+          push: true
+          tags: quay.io/gingersnap/cache-manager-mssql:latest
+          build-args: |
+            DB_VENDOR=mssql

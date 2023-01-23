@@ -14,6 +14,8 @@ public interface Vendor {
          case "pgsql":
          case "pg":
             yield new PostgreSQLVendor();
+         case "mssql":
+            yield new MSSQLVendor();
          case "mysql":
          case "mariadb":
             yield new MySQLVendor();

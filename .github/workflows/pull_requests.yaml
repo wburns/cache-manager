@@ -34,7 +34,7 @@ jobs:
 
       - name: Build and test MySQL
         run: |
-          mvn package -Pnative
+          mvn clean package -Pnative
           mvn test -Pintegration
 
       - name: MySQL Test Logs
@@ -46,7 +46,7 @@ jobs:
 
 #      - name: Build and test Postgres
 #        run: |
-#          mvn package -Pnative -Ppostgres
+#          mvn clean package -Pnative -Ppostgres
 #          mvn test -Pintegration -Ppostgres
 #
 #      - name: Postgres Test Logs
@@ -55,3 +55,15 @@ jobs:
 #        with:
 #          name: postgres-test-results
 #          path: ${{ env.TEST_OUTPUT_DIR }}
+
+      - name: Build and test MSSQL
+        run: |
+          mvn clean package -Pnative -Pmssql
+          mvn test -Pintegration -Pmssql
+
+      - name: MSSQL Test Logs
+        uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: mssql-test-results
+          path: ${{ env.TEST_OUTPUT_DIR }}

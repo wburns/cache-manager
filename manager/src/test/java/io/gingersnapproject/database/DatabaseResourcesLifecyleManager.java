@@ -1,5 +1,6 @@
 package io.gingersnapproject.database;
 
+import io.gingersnapproject.mssql.MSSQLServerResources;
 import io.gingersnapproject.mysql.MySQLResources;
 import io.gingersnapproject.postgres.PostgresResources;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -21,6 +22,7 @@ public class DatabaseResourcesLifecyleManager implements QuarkusTestResourceLife
         var dbKind = System.getProperty("quarkus.datasource.db-kind");
         switch (dbKind) {
             case "postgresql" -> db = new PostgresResources();
+            case "mssql" -> db = new MSSQLServerResources();
             default -> db = new MySQLResources();
         }
     }
