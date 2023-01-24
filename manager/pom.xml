@@ -135,8 +135,7 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <skip>${integration}</skip>
-                    <excludedGroups>integration-native</excludedGroups>
+                    <excludedGroups>${ci.exclusion}</excludedGroups>
                 </configuration>
             </plugin>
             <plugin>
