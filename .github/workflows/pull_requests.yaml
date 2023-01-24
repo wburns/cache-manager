@@ -31,5 +31,5 @@ jobs:
 
       - name: Build native executable
         run: |
-          mvn package -Pnative -DexcludedGroups=integration-native
-          mvn test -Dquarkus.test.profile=integration-native -Dgroups=integration-native
+          mvn package -Pnative
+          mvn test -Pintegration

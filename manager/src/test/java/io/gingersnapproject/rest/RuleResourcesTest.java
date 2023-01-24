@@ -18,7 +18,7 @@ public class RuleResourcesTest {
    @Test
    public void testRetrieveRuleKeys() {
       given()
-            .when().get("/rules/" + MySQLResources.RULE)
+            .when().get("/rules/airline")
             .then()
             .statusCode(200)
             .body("", Matchers.emptyCollectionOf(String.class));
