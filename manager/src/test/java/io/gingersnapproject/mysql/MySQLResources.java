@@ -25,6 +25,7 @@ public class MySQLResources implements QuarkusTestResourceLifecycleManager {
             .withPassword("password")
             .withDatabaseName(DATABASE)
             .withExposedPorts(MySQLContainer.MYSQL_PORT)
+            .withTmpFs(Map.of("/var/lib/mysql", "rw"))
             .withCopyFileToContainer(MountableFile.forClasspathResource("mysql-setup.sql"), "/docker-entrypoint-initdb.d/mysql-setup.sql")
       ;
       db.start();
