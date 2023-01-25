@@ -15,12 +15,12 @@ jobs:
           path: '**/*.xml'
           reporter: java-junit
 
-      - uses: dorny/test-reporter@v1
-        with:
-          artifact: postgres-test-results
-          name: Postgres Tests
-          path: '**/*.xml'
-          reporter: java-junit
+#      - uses: dorny/test-reporter@v1
+#        with:
+#          artifact: postgres-test-results
+#          name: Postgres Tests
+#          path: '**/*.xml'
+#          reporter: java-junit
 
       - uses: dorny/test-reporter@v1
         with:
