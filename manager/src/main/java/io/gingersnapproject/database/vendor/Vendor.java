@@ -1,5 +1,7 @@
 package io.gingersnapproject.database.vendor;
 
+import java.util.List;
+
 import io.gingersnapproject.database.model.Table;
 import io.smallrye.mutiny.Uni;
 import io.vertx.sqlclient.Pool;
@@ -25,4 +27,6 @@ public interface Vendor {
    }
 
    Uni<Table> describeTable(Pool pool, String table);
+
+   String getSelectStatement(String tableName, List<String> keyColumns, List<String> valueColumns);
 }

@@ -1,5 +1,8 @@
 package io.gingersnapproject.configuration;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.infinispan.commons.dataconversion.internal.Json;
 
 import io.smallrye.config.WithDefault;
@@ -14,10 +17,9 @@ public interface Rule {
       @WithDefault("|")
       String plainSeparator();
 
-      String selectStatement();
-
       @WithDefault("false")
       boolean queryEnabled();
+
 
       @WithDefault("true")
       boolean expandEntity();

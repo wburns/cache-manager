@@ -76,7 +76,7 @@ public class Caches {
             UniJoin.Builder<Object> builder = Uni.join().builder();
             for (ForeignKey fk : table.foreignKeys()) {
                // TODO: handle composite fks
-               Json fkJson = json.atDel(fk.columns().get(0));
+               Json fkJson = json.atDel(fk.columns().get(0).name());
                if (fkJson != null) {
                   String fkId = fkJson.asString();
                   String fkRule = databaseHandler.tableToRuleName(fk.refTable());

@@ -1,10 +1,9 @@
 package io.gingersnapproject.database;
 
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
@@ -17,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import io.gingersnapproject.configuration.Configuration;
 import io.gingersnapproject.configuration.Rule;
+import io.gingersnapproject.database.model.Column;
 import io.gingersnapproject.database.model.Table;
 import io.gingersnapproject.database.vendor.Vendor;
 import io.quarkus.runtime.StartupEvent;
@@ -38,8 +38,9 @@ public class DatabaseHandler {
 
    Vendor vendor;
 
-   Map<String, Table> tables = Collections.emptyMap();
-   Map<String, String> table2rule = Collections.emptyMap();
+   Map<String, Table> tables = new HashMap<>();
+   Map<String, String> table2rule = new HashMap<>();
+   Map<String, String> rule2Select = new HashMap<>();
 
    void start(@Observes StartupEvent ignore, Config config) {
       String dbKind = config.getValue("quarkus.datasource.db-kind", String.class);
@@ -48,12 +49,37 @@ public class DatabaseHandler {
    }
 
    public void refreshSchema() {
-      tables = configuration.rules().values().stream()
-            .map(rule -> vendor.describeTable(pool, rule.connector().table()).await().indefinitely())
-            .filter(Objects::nonNull)
-            .collect(Collectors.toMap(t -> t.name(), Function.identity()));
-      table2rule = configuration.rules().entrySet().stream()
-            .collect(Collectors.toMap(t -> t.getValue().connector().table(), t -> t.getKey()));
+      for (Map.Entry<String, Rule> entry : configuration.rules().entrySet()) {
+         String ruleName = entry.getKey();
+         Rule rule = entry.getValue();
+         String tableName = rule.connector().table();
+         Table table = vendor.describeTable(pool, rule.connector().table()).await().indefinitely();
+         if (table == null) {
+            throw new IllegalStateException("Table " + tableName + " configured for rule " + ruleName + " was not found!");
+         }
+         tables.put(tableName, table);
+         table2rule.put(tableName, ruleName);
+
+         Optional<List<String>> keyColumns = rule.connector().keyColumns();
+         Optional<List<String>> valueColumns = rule.connector().valueColumns();
+
+         String selectStatement;
+         if (rule.connector().selectStatement().isPresent()) {
+            if (keyColumns.isPresent() || valueColumns.isPresent()) {
+               throw new IllegalStateException("Sql statement provided for rule " + ruleName + ", but also has key or value columns configured");
+            }
+            selectStatement = rule.connector().selectStatement().get();
+         } else {
+            List<String> keyColumnsToUse;
+            List<String> valueColumnsToUse;
+            keyColumnsToUse = keyColumns.orElseGet(() -> table.primaryKey().columns().stream()
+                  .map(Column::name).toList());
+            valueColumnsToUse = valueColumns.orElseGet(() -> table.columns().stream()
+                  .map(Column::name).toList());
+            selectStatement = vendor.getSelectStatement(tableName, keyColumnsToUse, valueColumnsToUse);
+         }
+         rule2Select.put(ruleName, selectStatement);
+      }
    }
 
    public Uni<String> select(String rule, String key) {
@@ -62,8 +88,10 @@ public class DatabaseHandler {
          throw new IllegalArgumentException("No rule found for " + rule);
       }
 
+      String selectStatement = rule2Select.get(rule);
+
       // Have to do this until bug is fixed allowing injection of reactive Pool
-      var query = prepareQuery(pool, ruleConfig.selectStatement());
+      var query = prepareQuery(pool, selectStatement);
 
       String[] arguments = ruleConfig.keyType().toArguments(key, ruleConfig.plainSeparator());
       return query
@@ -71,7 +99,7 @@ public class DatabaseHandler {
             .onFailure().invoke(t -> log.error("Exception encountered!", t))
             .map(rs -> {
                if (rs.size() > 1) {
-                  throw new IllegalArgumentException("Result set for " + ruleConfig.selectStatement() + " for key: " + key + " returned " + rs.size() + " rows, it should only return 1");
+                  throw new IllegalArgumentException("Result set for " + selectStatement + " for key: " + key + " returned " + rs.size() + " rows, it should only return 1");
                }
                int columns = rs.columnsNames().size();
                RowIterator<Row> rowIterator = rs.iterator();
