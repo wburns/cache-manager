@@ -14,7 +14,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import io.gingersnapproject.mysql.MySQLResources;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -23,7 +22,9 @@ import io.quarkus.test.junit.QuarkusTest;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class JoinTest {
    private static final String RULE_NAME = "flight";
-   private static final String GET_PATH = "/rules/{rule}/{key}";
+   private static final String RULE_PATH = "/rules";
+   private static final String GET_PATH = RULE_PATH + "/{rule}/{key}";
+
    private RemoteCacheManager cm;
    private RemoteCache<String, String> cache;
 
@@ -51,8 +52,14 @@ public class JoinTest {
 
 
    @Test
-   public void testJoin() {
+   public void testJoin() throws Exception {
       cache.put("3", "{\"name\":\"BA0666\", \"scheduled_time\":\"12:00:00\", \"airline_id\": \"1\", \"gate_id\":\"3\"}");
       given().when().get(GET_PATH, "flight", "3").then().body(containsString("British Airways")).body(containsString("B1"));
+
+      Thread.sleep(1000); // we need to wait for the ES near real time behavior
+
+      given().queryParam("query", "select * from flight where name = 'BA0666' order by scheduled_time")
+            .when().get(RULE_PATH)
+            .then().body(containsString("hitCount=1"));
    }
 }
